@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Plugin Framework Patterns
 
-Follow the conventions in `internal/provider/example_*.go`.
+Follow the conventions in `internal/provider/kilhog_*.go`.
 
 ## File structure
 
@@ -39,8 +39,8 @@ func (r *FooResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 ## Client injection
 
-- Configure shared client in `ScaffoldingProvider.Configure()`.
-- Type-assert in each `Configure()`; emit diagnostic on mismatch (see `example_resource.go`).
+- Configure shared client in `KilhogProvider.Configure()`.
+- Type-assert in each `Configure()`; emit diagnostic on mismatch (see `kilhog_resource.go`).
 
 ## Logging & errors
 
@@ -49,7 +49,7 @@ func (r *FooResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 ## Metadata naming
 
-- Resource type: `req.ProviderTypeName + "_<name>"` (e.g. `scaffolding_example`).
+- Resource type: `req.ProviderTypeName + "_<name>"` (e.g. `kilhog_resource`).
 
 ## License header
 

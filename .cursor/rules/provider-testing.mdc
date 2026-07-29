@@ -21,7 +21,7 @@ For ephemeral resources, use `testAccProtoV6ProviderFactoriesWithEcho`.
 
 - Acceptance: `TestAcc<ResourceName>` with `resource.Test`
 - Unit: `Test<FunctionName>_<Case>` with `resource.UnitTest`
-- Config helpers: `testAccExampleResourceConfig(...)`
+- Config helpers: `testAccKilhogResourceConfig(...)`
 
 ## Assertions
 
@@ -29,9 +29,9 @@ Use modern plugin-testing helpers (not legacy `Check` functions):
 
 ```go
 statecheck.ExpectKnownValue(
-    "scaffolding_example.test",
+    "kilhog_resource.test",
     tfjsonpath.New("id"),
-    knownvalue.StringExact("example-id"),
+    knownvalue.StringExact("kilhog-id"),
 )
 ```
 

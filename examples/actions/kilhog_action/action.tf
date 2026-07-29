@@ -4,13 +4,13 @@ resource "terraform_data" "example" {
   lifecycle {
     action_trigger {
       events  = [before_create]
-      actions = [action.scaffolding_example.example]
+      actions = [action.kilhog_action.example]
     }
   }
 }
 
-action "scaffolding_example" "example" {
+action "kilhog_action" "example" {
   config {
-    configurable_attribute = "some-value"
+    configurable_attribute = "value"
   }
 }

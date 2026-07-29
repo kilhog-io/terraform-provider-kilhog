@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
-func TestAccExampleEphemeralResource(t *testing.T) {
+func TestAccKilhogEphemeralResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		// Ephemeral resources are only available in 1.10 and later
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
@@ -24,7 +24,7 @@ func TestAccExampleEphemeralResource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactoriesWithEcho,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccExampleEphemeralResourceConfig("example"),
+				Config: testAccKilhogEphemeralResourceConfig("kilhog"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"echo.test",
@@ -37,14 +37,14 @@ func TestAccExampleEphemeralResource(t *testing.T) {
 	})
 }
 
-func testAccExampleEphemeralResourceConfig(configurableAttribute string) string {
+func testAccKilhogEphemeralResourceConfig(configurableAttribute string) string {
 	return fmt.Sprintf(`
-ephemeral "scaffolding_example" "test" {
+ephemeral "kilhog_ephemeral" "test" {
   configurable_attribute = %[1]q
 }
 
 provider "echo" {
-  data = ephemeral.scaffolding_example.test
+  data = ephemeral.kilhog_ephemeral.test
 }
 
 resource "echo" "test" {}

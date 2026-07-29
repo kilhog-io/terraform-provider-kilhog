@@ -15,42 +15,42 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ action.Action = &ExampleAction{}
-var _ action.ActionWithConfigure = &ExampleAction{}
+var _ action.Action = &KilhogAction{}
+var _ action.ActionWithConfigure = &KilhogAction{}
 
-func NewExampleAction() action.Action {
-	return &ExampleAction{}
+func NewKilhogAction() action.Action {
+	return &KilhogAction{}
 }
 
-// ExampleAction defines the action implementation.
-type ExampleAction struct {
+// KilhogAction defines the action implementation.
+type KilhogAction struct {
 	client *http.Client
 }
 
-// ExampleActionModel describes the action data model.
-type ExampleActionModel struct {
+// KilhogActionModel describes the action data model.
+type KilhogActionModel struct {
 	ConfigurableAttribute types.String `tfsdk:"configurable_attribute"`
 }
 
-func (e *ExampleAction) Metadata(ctx context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_example"
+func (e *KilhogAction) Metadata(ctx context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_action"
 }
 
-func (e *ExampleAction) Schema(ctx context.Context, req action.SchemaRequest, resp *action.SchemaResponse) {
+func (e *KilhogAction) Schema(ctx context.Context, req action.SchemaRequest, resp *action.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Example action",
+		MarkdownDescription: "Kilhog action",
 
 		Attributes: map[string]schema.Attribute{
 			"configurable_attribute": schema.StringAttribute{
-				MarkdownDescription: "Example configurable attribute",
+				MarkdownDescription: "Configurable attribute",
 				Optional:            true,
 			},
 		},
 	}
 }
 
-func (e *ExampleAction) Configure(ctx context.Context, req action.ConfigureRequest, resp *action.ConfigureResponse) {
+func (e *KilhogAction) Configure(ctx context.Context, req action.ConfigureRequest, resp *action.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -70,13 +70,13 @@ func (e *ExampleAction) Configure(ctx context.Context, req action.ConfigureReque
 	e.client = client
 }
 
-func (e *ExampleAction) Invoke(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
+func (e *KilhogAction) Invoke(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
 	// Send a progress message back to Terraform
 	resp.SendProgress(action.InvokeProgressEvent{
 		Message: "starting action invocation",
 	})
 
-	var data ExampleActionModel
+	var data KilhogActionModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)

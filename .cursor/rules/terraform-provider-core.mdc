@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Terraform Provider — Kilhog
 
-This repository is a **Terraform Plugin Framework** provider for Kilhog. It is currently based on the HashiCorp scaffolding template and must be customized (module name, provider type, registry address, API client).
+This repository is a **Terraform Plugin Framework** provider for Kilhog.
 
 ## Stack
 
@@ -41,5 +41,5 @@ make fmt        # gofmt
 
 ## Scope discipline
 
-- Minimize diffs; match existing scaffolding patterns until real Kilhog API code replaces examples.
+- Match existing patterns in `internal/provider/kilhog_*.go` when adding new resources.
 - Register new resources/data sources in `provider.go`.

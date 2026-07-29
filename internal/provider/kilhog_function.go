@@ -10,22 +10,22 @@ import (
 )
 
 var (
-	_ function.Function = ExampleFunction{}
+	_ function.Function = KilhogFunction{}
 )
 
-func NewExampleFunction() function.Function {
-	return ExampleFunction{}
+func NewKilhogFunction() function.Function {
+	return KilhogFunction{}
 }
 
-type ExampleFunction struct{}
+type KilhogFunction struct{}
 
-func (r ExampleFunction) Metadata(_ context.Context, req function.MetadataRequest, resp *function.MetadataResponse) {
-	resp.Name = "example"
+func (r KilhogFunction) Metadata(_ context.Context, req function.MetadataRequest, resp *function.MetadataResponse) {
+	resp.Name = "echo"
 }
 
-func (r ExampleFunction) Definition(_ context.Context, _ function.DefinitionRequest, resp *function.DefinitionResponse) {
+func (r KilhogFunction) Definition(_ context.Context, _ function.DefinitionRequest, resp *function.DefinitionResponse) {
 	resp.Definition = function.Definition{
-		Summary:             "Example function",
+		Summary:             "Echo function",
 		MarkdownDescription: "Echoes given argument as result",
 		Parameters: []function.Parameter{
 			function.StringParameter{
@@ -37,7 +37,7 @@ func (r ExampleFunction) Definition(_ context.Context, _ function.DefinitionRequ
 	}
 }
 
-func (r ExampleFunction) Run(ctx context.Context, req function.RunRequest, resp *function.RunResponse) {
+func (r KilhogFunction) Run(ctx context.Context, req function.RunRequest, resp *function.RunResponse) {
 	var data string
 
 	resp.Error = function.ConcatFuncErrors(req.Arguments.Get(ctx, &data))

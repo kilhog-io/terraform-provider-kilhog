@@ -21,7 +21,7 @@ examples/
   data-sources/<data_source_type>/data-source.tf
 ```
 
-Resource type names must match the provider metadata (e.g. `scaffolding_example`).
+Resource type names must match the provider metadata (e.g. `kilhog_resource`).
 
 ## Regenerate
 
@@ -33,7 +33,7 @@ CI fails if `make generate` produces uncommitted changes.
 
 ## Provider name in generation
 
-Update the `-provider-name` flag in `tools/tools.go` when renaming the provider from `scaffolding` to `kilhog`.
+The `-provider-name` flag in `tools/tools.go` is set to `kilhog`.
 
 ## Terraform examples
 

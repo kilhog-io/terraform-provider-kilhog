@@ -13,27 +13,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
-func TestAccExampleResource(t *testing.T) {
+func TestAccKilhogResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccExampleResourceConfig("one"),
+				Config: testAccKilhogResourceConfig("one"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
-						"scaffolding_example.test",
+						"kilhog_resource.test",
 						tfjsonpath.New("id"),
-						knownvalue.StringExact("example-id"),
+						knownvalue.StringExact("kilhog-id"),
 					),
 					statecheck.ExpectKnownValue(
-						"scaffolding_example.test",
+						"kilhog_resource.test",
 						tfjsonpath.New("defaulted"),
-						knownvalue.StringExact("example value when not configured"),
+						knownvalue.StringExact("kilhog default value"),
 					),
 					statecheck.ExpectKnownValue(
-						"scaffolding_example.test",
+						"kilhog_resource.test",
 						tfjsonpath.New("configurable_attribute"),
 						knownvalue.StringExact("one"),
 					),
@@ -41,7 +41,7 @@ func TestAccExampleResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "scaffolding_example.test",
+				ResourceName:      "kilhog_resource.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 				// This is not normally necessary, but is here because this
@@ -52,20 +52,20 @@ func TestAccExampleResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccExampleResourceConfig("two"),
+				Config: testAccKilhogResourceConfig("two"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
-						"scaffolding_example.test",
+						"kilhog_resource.test",
 						tfjsonpath.New("id"),
-						knownvalue.StringExact("example-id"),
+						knownvalue.StringExact("kilhog-id"),
 					),
 					statecheck.ExpectKnownValue(
-						"scaffolding_example.test",
+						"kilhog_resource.test",
 						tfjsonpath.New("defaulted"),
-						knownvalue.StringExact("example value when not configured"),
+						knownvalue.StringExact("kilhog default value"),
 					),
 					statecheck.ExpectKnownValue(
-						"scaffolding_example.test",
+						"kilhog_resource.test",
 						tfjsonpath.New("configurable_attribute"),
 						knownvalue.StringExact("two"),
 					),
@@ -76,9 +76,9 @@ func TestAccExampleResource(t *testing.T) {
 	})
 }
 
-func testAccExampleResourceConfig(configurableAttribute string) string {
+func testAccKilhogResourceConfig(configurableAttribute string) string {
 	return fmt.Sprintf(`
-resource "scaffolding_example" "test" {
+resource "kilhog_resource" "test" {
   configurable_attribute = %[1]q
 }
 `, configurableAttribute)

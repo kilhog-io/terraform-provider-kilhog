@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
-func TestExampleFunction_Known(t *testing.T) {
+func TestKilhogFunction_Known(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_8_0),
@@ -23,7 +23,7 @@ func TestExampleFunction_Known(t *testing.T) {
 			{
 				Config: `
 				output "test" {
-					value = provider::scaffolding::example("testvalue")
+					value = provider::kilhog::echo("testvalue")
 				}
 				`,
 				ConfigStateChecks: []statecheck.StateCheck{
@@ -37,7 +37,7 @@ func TestExampleFunction_Known(t *testing.T) {
 	})
 }
 
-func TestExampleFunction_Null(t *testing.T) {
+func TestKilhogFunction_Null(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_8_0),
@@ -47,7 +47,7 @@ func TestExampleFunction_Null(t *testing.T) {
 			{
 				Config: `
 				output "test" {
-					value = provider::scaffolding::example(null)
+					value = provider::kilhog::echo(null)
 				}
 				`,
 				// The parameter does not enable AllowNullValue
@@ -57,7 +57,7 @@ func TestExampleFunction_Null(t *testing.T) {
 	})
 }
 
-func TestExampleFunction_Unknown(t *testing.T) {
+func TestKilhogFunction_Unknown(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_8_0),
@@ -71,7 +71,7 @@ func TestExampleFunction_Unknown(t *testing.T) {
 				}
 				
 				output "test" {
-					value = provider::scaffolding::example(terraform_data.test.output)
+					value = provider::kilhog::echo(terraform_data.test.output)
 				}
 				`,
 				ConfigStateChecks: []statecheck.StateCheck{

@@ -1,4 +1,4 @@
-module github.com/hashicorp/terraform-provider-scaffolding-framework
+module github.com/kilhog/terraform-provider-kilhog
 
 go 1.25.8
 

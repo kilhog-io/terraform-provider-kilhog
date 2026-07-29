@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
-func TestAccExampleAction(t *testing.T) {
+func TestAccKilhogAction(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_14_0),
@@ -19,7 +19,7 @@ func TestAccExampleAction(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccExampleActionConfig,
+				Config: testAccKilhogActionConfig,
 				PostApplyFunc: func() {
 					// Test the results of an action operation.
 					// Actions should not affect existing resources managed
@@ -43,20 +43,20 @@ func TestAccExampleAction(t *testing.T) {
 	})
 }
 
-const testAccExampleActionConfig = `
+const testAccKilhogActionConfig = `
 resource "terraform_data" "test" {
 	input = "fake-string"
 
 	lifecycle {
 		action_trigger {
 		  events  = [before_create] # action triggers before resource creation
-		  actions = [action.scaffolding_example.test]
+		  actions = [action.kilhog_action.test]
 		}
 	}
 }
 
-action "scaffolding_example" "test" {
+action "kilhog_action" "test" {
 	config {
-		configurable_attribute = "example"
+		configurable_attribute = "kilhog"
 	}
 }`
