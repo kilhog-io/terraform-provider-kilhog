@@ -95,7 +95,10 @@ func (p *KilhogProvider) Resources(_ context.Context) []func() resource.Resource
 }
 
 func (p *KilhogProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{
+		NewNetworkDataSource,
+		NewSubnetDataSource,
+	}
 }
 
 func New(version string) func() provider.Provider {

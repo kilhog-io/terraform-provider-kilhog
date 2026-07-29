@@ -29,6 +29,13 @@ provider "kilhog" {
 | `kilhog_network` | Root tenancy container for subnets |
 | `kilhog_subnet` | IPv4 subnet within a network or under a parent subnet |
 
+## Data Sources
+
+| Data Source | Description |
+|-------------|-------------|
+| `kilhog_network` | Read an existing network by ID or name |
+| `kilhog_subnet` | Read an existing subnet by network ID and subnet ID or name |
+
 ### Example
 
 ```hcl
@@ -49,6 +56,15 @@ resource "kilhog_subnet" "apps" {
   parent_subnet_id = kilhog_subnet.dmz.id
   name             = "apps"
   prefix           = 25
+}
+
+data "kilhog_network" "production" {
+  name = kilhog_network.production.name
+}
+
+data "kilhog_subnet" "dmz" {
+  network_id = data.kilhog_network.production.id
+  name       = "dmz"
 }
 ```
 
