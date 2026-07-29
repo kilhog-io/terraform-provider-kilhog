@@ -4,31 +4,48 @@
 package provider
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
 )
 
-// testAccProtoV6ProviderFactories is used to instantiate a provider during acceptance testing.
-// The factory function is called for each Terraform CLI command to create a provider
-// server that the CLI can connect to and interact with.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"kilhog": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-// testAccProtoV6ProviderFactoriesWithEcho includes the echo provider alongside the kilhog provider.
-// It allows for testing assertions on data returned by an ephemeral resource during Open.
-// The echoprovider is used to arrange tests by echoing ephemeral data into the Terraform state.
-// This lets the data be referenced in test assertions with state checks.
-var testAccProtoV6ProviderFactoriesWithEcho = map[string]func() (tfprotov6.ProviderServer, error){
-	"kilhog": providerserver.NewProtocol6WithError(New("test")()),
-	"echo":        echoprovider.NewProviderServer(),
+func testAccPreCheck(t *testing.T) {
+	if v := os.Getenv("TF_ACC"); v == "" {
+		t.Skip("Acceptance tests skipped unless env 'TF_ACC' is set")
+	}
 }
 
-func testAccPreCheck(t *testing.T) {
-	// You can add code here to run prior to any test case execution, for example assertions
-	// about the appropriate environment variables being set are common to see in a pre-check
-	// function.
+func testAccProviderConfig() string {
+	baseURL := os.Getenv("KILHOG_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
+	apiKey := os.Getenv("KILHOG_API_KEY")
+
+	return fmtProviderConfig(baseURL, apiKey)
+}
+
+func fmtProviderConfig(baseURL, apiKey string) string {
+	if apiKey == "" {
+		return fmt.Sprintf(`
+provider "kilhog" {
+  base_url = %q
+}
+`, baseURL)
+	}
+
+	return fmt.Sprintf(`
+provider "kilhog" {
+  base_url = %q
+  api_key  = %q
+}
+`, baseURL, apiKey)
 }

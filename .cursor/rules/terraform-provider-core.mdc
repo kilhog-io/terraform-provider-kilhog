@@ -17,7 +17,7 @@ This repository is a **Terraform Plugin Framework** provider for Kilhog.
 ## Layout
 
 - `main.go` — provider entry point (`providerserver.Serve`)
-- `internal/provider/` — all provider implementation (single package today)
+- `internal/provider/` — provider implementation using `github.com/kilhog-io/kilhog/pkg/kilhog`
 - `examples/` — Terraform configs consumed by doc generation
 - `docs/` — auto-generated; never edit by hand
 - `tools/` — separate Go module for `go generate`
@@ -42,4 +42,5 @@ make fmt        # gofmt
 ## Scope discipline
 
 - Match existing patterns in `internal/provider/kilhog_*.go` when adding new resources.
-- Register new resources/data sources in `provider.go`.
+- Register new resources/data sources in `provider.go`
+- Local SDK development uses a `replace` directive in `go.mod` pointing to the kilhog repository

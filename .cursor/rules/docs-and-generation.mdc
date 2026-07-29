@@ -21,7 +21,7 @@ examples/
   data-sources/<data_source_type>/data-source.tf
 ```
 
-Resource type names must match the provider metadata (e.g. `kilhog_resource`).
+Resource type names must match the provider metadata (e.g. `kilhog_network`, `kilhog_subnet`).
 
 ## Regenerate
 

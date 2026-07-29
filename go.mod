@@ -1,13 +1,17 @@
 module github.com/kilhog/terraform-provider-kilhog
 
-go 1.25.8
+go 1.26.5
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
+	github.com/kilhog-io/kilhog v0.0.0
 )
+
+replace github.com/kilhog-io/kilhog => /Users/yohan.belleguic/devel/kilhog/kilhog-cursor
 
 require (
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
@@ -51,8 +55,8 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

@@ -21,7 +21,8 @@ For ephemeral resources, use `testAccProtoV6ProviderFactoriesWithEcho`.
 
 - Acceptance: `TestAcc<ResourceName>` with `resource.Test`
 - Unit: `Test<FunctionName>_<Case>` with `resource.UnitTest`
-- Config helpers: `testAccKilhogResourceConfig(...)`
+- Config helpers: `testAccNetworkConfig(...)`, `testAccSubnetConfig(...)`
+- Acceptance tests require `TF_ACC=1` and a running Kilhog API (`KILHOG_BASE_URL`, optional `KILHOG_API_KEY`)
 
 ## Assertions
 
@@ -29,9 +30,9 @@ Use modern plugin-testing helpers (not legacy `Check` functions):
 
 ```go
 statecheck.ExpectKnownValue(
-    "kilhog_resource.test",
-    tfjsonpath.New("id"),
-    knownvalue.StringExact("kilhog-id"),
+    "kilhog_network.test",
+    tfjsonpath.New("name"),
+    knownvalue.StringExact("production"),
 )
 ```
 

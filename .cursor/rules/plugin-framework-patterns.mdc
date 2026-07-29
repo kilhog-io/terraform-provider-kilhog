@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Plugin Framework Patterns
 
-Follow the conventions in `internal/provider/kilhog_*.go`.
+Follow the conventions in `internal/provider/network_resource.go` and `internal/provider/subnet_resource.go`.
 
 ## File structure
 
@@ -39,8 +39,9 @@ func (r *FooResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 ## Client injection
 
-- Configure shared client in `KilhogProvider.Configure()`.
-- Type-assert in each `Configure()`; emit diagnostic on mismatch (see `kilhog_resource.go`).
+- Configure shared client in `KilhogProvider.Configure()` as `*kilhog.Client`.
+- Type-assert in each `Configure()`; emit diagnostic on mismatch (see `network_resource.go`).
+- Map API errors with `apiErrorSummary()` from `diagnostics.go`.
 
 ## Logging & errors
 
@@ -49,7 +50,7 @@ func (r *FooResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 ## Metadata naming
 
-- Resource type: `req.ProviderTypeName + "_<name>"` (e.g. `kilhog_resource`).
+- Resource type: `req.ProviderTypeName + "_<name>"` (e.g. `kilhog_network`, `kilhog_subnet`).
 
 ## License header
 

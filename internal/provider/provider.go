@@ -5,23 +5,18 @@ package provider
 
 import (
 	"context"
-	"net/http"
+	"os"
 
-	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
-	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	kilhogsdk "github.com/kilhog-io/kilhog/pkg/kilhog"
 )
 
 // Ensure KilhogProvider satisfies various provider interfaces.
 var _ provider.Provider = &KilhogProvider{}
-var _ provider.ProviderWithFunctions = &KilhogProvider{}
-var _ provider.ProviderWithEphemeralResources = &KilhogProvider{}
-var _ provider.ProviderWithActions = &KilhogProvider{}
 
 // KilhogProvider defines the provider implementation.
 type KilhogProvider struct {
@@ -33,20 +28,27 @@ type KilhogProvider struct {
 
 // KilhogProviderModel describes the provider data model.
 type KilhogProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
+	BaseURL types.String `tfsdk:"base_url"`
+	APIKey  types.String `tfsdk:"api_key"`
 }
 
-func (p *KilhogProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *KilhogProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "kilhog"
 	resp.Version = p.version
 }
 
-func (p *KilhogProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *KilhogProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Interact with the Kilhog IPAM API.",
 		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Kilhog API endpoint",
+			"base_url": schema.StringAttribute{
+				MarkdownDescription: "Kilhog API base URL. May also be set via the `KILHOG_BASE_URL` environment variable. Defaults to `http://localhost:8080`.",
 				Optional:            true,
+			},
+			"api_key": schema.StringAttribute{
+				MarkdownDescription: "Kilhog API key sent as a Bearer token. May also be set via the `KILHOG_API_KEY` environment variable.",
+				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}
@@ -56,48 +58,44 @@ func (p *KilhogProvider) Configure(ctx context.Context, req provider.ConfigureRe
 	var data KilhogProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
+	baseURL := data.BaseURL.ValueString()
+	if data.BaseURL.IsNull() || data.BaseURL.IsUnknown() {
+		if envBaseURL := os.Getenv("KILHOG_BASE_URL"); envBaseURL != "" {
+			baseURL = envBaseURL
+		}
+	}
 
-	// Client configuration for data sources and resources
-	client := http.DefaultClient
+	apiKey := data.APIKey.ValueString()
+	if data.APIKey.IsNull() || data.APIKey.IsUnknown() {
+		apiKey = os.Getenv("KILHOG_API_KEY")
+	}
+
+	client, err := kilhogsdk.NewClient(kilhogsdk.ClientConfig{
+		BaseURL: baseURL,
+		APIKey:  apiKey,
+	})
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to create Kilhog client", err.Error())
+		return
+	}
+
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
 
-func (p *KilhogProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *KilhogProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewKilhogResource,
+		NewNetworkResource,
+		NewSubnetResource,
 	}
 }
 
-func (p *KilhogProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
-	return []func() ephemeral.EphemeralResource{
-		NewKilhogEphemeralResource,
-	}
-}
-
-func (p *KilhogProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		NewKilhogDataSource,
-	}
-}
-
-func (p *KilhogProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewKilhogFunction,
-	}
-}
-
-func (p *KilhogProvider) Actions(ctx context.Context) []func() action.Action {
-	return []func() action.Action{
-		NewKilhogAction,
-	}
+func (p *KilhogProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return nil
 }
 
 func New(version string) func() provider.Provider {
