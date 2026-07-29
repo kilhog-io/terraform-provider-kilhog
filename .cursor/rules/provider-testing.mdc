@@ -1,0 +1,59 @@
+---
+description: Testing conventions for Terraform provider acceptance and unit tests
+globs: **/*_test.go
+alwaysApply: false
+---
+
+# Provider Testing
+
+## Shared setup
+
+Use factories from `provider_test.go`:
+
+```go
+ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+PreCheck:                 func() { testAccPreCheck(t) },
+```
+
+For ephemeral resources, use `testAccProtoV6ProviderFactoriesWithEcho`.
+
+## Naming
+
+- Acceptance: `TestAcc<ResourceName>` with `resource.Test`
+- Unit: `Test<FunctionName>_<Case>` with `resource.UnitTest`
+- Config helpers: `testAccExampleResourceConfig(...)`
+
+## Assertions
+
+Use modern plugin-testing helpers (not legacy `Check` functions):
+
+```go
+statecheck.ExpectKnownValue(
+    "scaffolding_example.test",
+    tfjsonpath.New("id"),
+    knownvalue.StringExact("example-id"),
+)
+```
+
+## Acceptance test lifecycle
+
+Cover create → import → update → delete when applicable. Use `ImportStateVerify` and document any `ImportStateVerifyIgnore` fields.
+
+## Version gating
+
+Skip tests on unsupported Terraform versions:
+
+```go
+tfversion.SkipBelow(tfversion.Version1_14_0),
+```
+
+- Functions: TF >= 1.8
+- Ephemeral resources: TF >= 1.10
+- Actions: TF >= 1.14
+
+## Running tests
+
+- Unit: `make test`
+- Acceptance: `make testacc` (requires Terraform CLI and `TF_ACC=1`)
+
+Do not import `terraform-plugin-sdk/v2/helper/resource`; use `terraform-plugin-testing`.

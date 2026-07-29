@@ -1,0 +1,56 @@
+---
+description: Terraform Plugin Framework coding patterns for provider implementation
+globs: internal/**/*.go,main.go
+alwaysApply: false
+---
+
+# Plugin Framework Patterns
+
+Follow the conventions in `internal/provider/example_*.go`.
+
+## File structure
+
+Each resource/data source/function/action/ephemeral resource needs:
+
+1. Compile-time interface checks: `var _ resource.Resource = &FooResource{}`
+2. Constructor: `NewFooResource() resource.Resource`
+3. Implementation struct with injected client
+4. Separate `*Model` struct with `tfsdk:"..."` tags using `types.*` wrappers
+
+## Schema
+
+- Use `MarkdownDescription` on schema and attributes (feeds doc generator).
+- Computed IDs: `stringplanmodifier.UseStateForUnknown()`.
+- Defaults: `stringdefault.StaticString(...)`.
+
+## CRUD lifecycle
+
+```go
+func (r *FooResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+    var data FooResourceModel
+    resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+    if resp.Diagnostics.HasError() {
+        return
+    }
+    // call upstream API via r.client
+    resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+```
+
+## Client injection
+
+- Configure shared client in `ScaffoldingProvider.Configure()`.
+- Type-assert in each `Configure()`; emit diagnostic on mismatch (see `example_resource.go`).
+
+## Logging & errors
+
+- Use `tflog.Trace(ctx, "...")` from `terraform-plugin-log`.
+- Return diagnostics via `resp.Diagnostics.AddError(...)`; never panic.
+
+## Metadata naming
+
+- Resource type: `req.ProviderTypeName + "_<name>"` (e.g. `scaffolding_example`).
+
+## License header
+
+Preserve the MPL-2.0 copyright header on every Go file. Run `make generate` to manage headers via copywrite.

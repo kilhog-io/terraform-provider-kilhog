@@ -1,0 +1,26 @@
+---
+description: All Cursor rules and AI communication must be written in English
+alwaysApply: true
+---
+
+# Language: English Only
+
+All Cursor rules, agent instructions, and AI-generated project artifacts must be written in **English**.
+
+## Scope
+
+- `.cursor/rules/*.mdc` files
+- `AGENTS.md` and other agent instruction files
+- Code comments, docstrings, and `MarkdownDescription` fields added by the AI
+- Commit messages, PR descriptions, and CHANGELOG entries drafted by the AI
+- Generated or updated documentation in `docs/` and `examples/`
+
+## Exceptions
+
+- User-facing Terraform attribute descriptions may stay in the language required by product or localization needs, but default to English unless the user specifies otherwise.
+- Do not translate existing French or other non-English user messages; respond to the user in their preferred language while keeping project artifacts in English.
+
+## When creating new rules
+
+- Write rule titles, descriptions, and body content in English.
+- Use `description` frontmatter in English (shown in the Cursor rule picker).

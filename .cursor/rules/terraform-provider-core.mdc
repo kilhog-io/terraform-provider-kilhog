@@ -1,0 +1,45 @@
+---
+description: Core context for the Kilhog Terraform provider project
+alwaysApply: true
+---
+
+# Terraform Provider — Kilhog
+
+This repository is a **Terraform Plugin Framework** provider for Kilhog. It is currently based on the HashiCorp scaffolding template and must be customized (module name, provider type, registry address, API client).
+
+## Stack
+
+- Go 1.25+ with **Terraform Plugin Framework** (not SDK v2)
+- `terraform-plugin-testing` for acceptance and unit tests
+- `terraform-plugin-docs` (`tfplugindocs`) for registry documentation
+- GNU Make, golangci-lint, GoReleaser
+
+## Layout
+
+- `main.go` — provider entry point (`providerserver.Serve`)
+- `internal/provider/` — all provider implementation (single package today)
+- `examples/` — Terraform configs consumed by doc generation
+- `docs/` — auto-generated; never edit by hand
+- `tools/` — separate Go module for `go generate`
+
+## Commands
+
+```bash
+make build      # compile
+make test       # unit tests
+make testacc    # acceptance tests (TF_ACC=1, needs Terraform)
+make lint       # golangci-lint
+make generate   # headers, fmt examples, regenerate docs
+make fmt        # gofmt
+```
+
+## CI expectations
+
+- `make generate` must produce no diff (docs drift fails CI)
+- Acceptance tests run against Terraform 1.13.* and 1.14.*
+- Do not import `terraform-plugin-sdk/v2` (blocked by depguard)
+
+## Scope discipline
+
+- Minimize diffs; match existing scaffolding patterns until real Kilhog API code replaces examples.
+- Register new resources/data sources in `provider.go`.
