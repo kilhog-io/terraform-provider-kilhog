@@ -8,10 +8,8 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
-	github.com/kilhog-io/kilhog v0.0.0
+	github.com/kilhog-io/kilhog v0.0.0-20260729171250-cecda75a79c6
 )
-
-replace github.com/kilhog-io/kilhog => /Users/yohan.belleguic/devel/kilhog/kilhog-cursor
 
 require (
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect

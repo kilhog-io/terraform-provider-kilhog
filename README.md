@@ -70,13 +70,26 @@ data "kilhog_subnet" "dmz" {
 
 See [`examples/`](examples/) for complete Terraform configurations.
 
+## CI/CD
+
+GitHub Actions workflows live under `.github/workflows/`:
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `Tests` | push/PR to `main` | Build, lint, unit tests, docs generation check, acceptance tests (Terraform 1.13.* / 1.14.*) against a local Kilhog API |
+| `Release` | tag `v*` | Signed release via GoReleaser (`GPG_PRIVATE_KEY`, `PASSPHRASE` secrets) |
+
+Acceptance tests start the Kilhog API from [`kilhog-io/kilhog`](https://github.com/kilhog-io/kilhog) for the duration of the job.
+
 ## Local SDK Development
 
-During local development, the provider depends on the Kilhog SDK via a `replace` directive in `go.mod`:
+The provider depends on the published Kilhog Go module (`github.com/kilhog-io/kilhog`). For local SDK work, add a temporary `replace` in `go.mod` (do not commit it):
 
 ```go
-replace github.com/kilhog-io/kilhog => /path/to/kilhog-cursor
+replace github.com/kilhog-io/kilhog => ../kilhog
 ```
+
+Or use a `go.work` file at the workspace root.
 
 ## Building the Provider
 
