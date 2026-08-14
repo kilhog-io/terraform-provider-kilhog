@@ -2,6 +2,8 @@
 
 Terraform provider for [Kilhog](https://kilhog.com), an IP Address Management (IPAM) platform. It uses the official Go SDK (`github.com/kilhog-io/kilhog/pkg/kilhog`) to manage networks and subnets.
 
+Registry address: [`kilhog-io/kilhog`](https://registry.terraform.io/providers/kilhog-io/kilhog). See [PUBLISHING.md](PUBLISHING.md) for HashiCorp Registry setup and release credentials.
+
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
@@ -11,6 +13,14 @@ Terraform provider for [Kilhog](https://kilhog.com), an IP Address Management (I
 ## Provider Configuration
 
 ```hcl
+terraform {
+  required_providers {
+    kilhog = {
+      source = "kilhog-io/kilhog"
+    }
+  }
+}
+
 provider "kilhog" {
   base_url = "http://localhost:8080"
   api_key  = "your-api-key"
@@ -77,7 +87,9 @@ GitHub Actions workflows live under `.github/workflows/`:
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `Tests` | push/PR to `main` | Build, lint, unit tests, docs generation check, acceptance tests (Terraform 1.13.* / 1.14.*) against a local Kilhog API |
-| `Release` | tag `v*` | Signed release via GoReleaser (`GPG_PRIVATE_KEY`, `PASSPHRASE` secrets) |
+| `Release` | tag `vMAJOR.MINOR.PATCH` | Signed GitHub Release via GoReleaser (`GPG_PRIVATE_KEY`, `PASSPHRASE`), then HashiCorp Registry ingest via the GitHub webhook |
+
+Publishing a new version is `git tag vX.Y.Z && git push origin vX.Y.Z`. One-time GPG key, GitHub secrets, and registry declaration steps are in [PUBLISHING.md](PUBLISHING.md).
 
 Acceptance tests start the Kilhog API from [`kilhog-io/kilhog`](https://github.com/kilhog-io/kilhog) for the duration of the job.
 
