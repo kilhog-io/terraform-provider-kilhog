@@ -1,16 +1,29 @@
-# Terraform Provider Kilhog — release via GoReleaser on version tags.
+# Terraform Provider Kilhog — signed GitHub release via GoReleaser on version tags.
+#
+# After the first one-time registration on registry.terraform.io, HashiCorp
+# installs a GitHub webhook on this repository. Each published GitHub Release
+# is then ingested automatically as a new provider version.
+# See PUBLISHING.md for GPG keys, GitHub secrets, and registry setup.
 name: Release
 
 on:
   push:
     tags:
-      - 'v*'
+      # Semantic versions only (optional prerelease suffix, e.g. v1.2.3-rc.1).
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 permissions:
   contents: write
 
+env:
+  # Must match the GitHub org/user that owns this repo and the name after
+  # terraform-provider- in the repository name.
+  TF_REGISTRY_NAMESPACE: kilhog-io
+  TF_REGISTRY_TYPE: kilhog
+
 jobs:
   goreleaser:
+    name: GitHub Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,7 +43,98 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
+          distribution: goreleaser
+          version: '~> v2'
           args: release --clean
         env:
+          # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+      - name: Verify Terraform Registry release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          prefix="terraform-provider-kilhog_${version}"
+          assets="$(gh release view "${GITHUB_REF_NAME}" --json assets --jq '.assets[].name')"
+          echo "Published assets:"
+          echo "${assets}"
+          missing=0
+          for required in \
+            "${prefix}_manifest.json" \
+            "${prefix}_SHA256SUMS" \
+            "${prefix}_SHA256SUMS.sig" \
+            "${prefix}_linux_amd64.zip" \
+            "${prefix}_linux_arm64.zip" \
+            "${prefix}_darwin_amd64.zip" \
+            "${prefix}_darwin_arm64.zip" \
+            "${prefix}_windows_amd64.zip"
+          do
+            if ! grep -Fxq "${required}" <<<"${assets}"; then
+              echo "Missing required registry asset: ${required}" >&2
+              missing=1
+            fi
+          done
+          if [[ "${missing}" -ne 0 ]]; then
+            echo "GitHub Release is missing assets required by the HashiCorp Terraform Registry." >&2
+            exit 1
+          fi
+          echo "All required Terraform Registry assets are present."
+
+  terraform-registry:
+    name: HashiCorp Terraform Registry
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Wait for registry to ingest this version
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          provider_url="https://registry.terraform.io/v1/providers/${TF_REGISTRY_NAMESPACE}/${TF_REGISTRY_TYPE}"
+          versions_url="${provider_url}/versions"
+
+          echo "Expected registry address: ${TF_REGISTRY_NAMESPACE}/${TF_REGISTRY_TYPE}"
+          echo "Expected version: ${version}"
+          echo "GitHub release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
+
+          status="$(curl -sS -o /tmp/tf-provider.json -w '%{http_code}' "${provider_url}" || true)"
+          if [[ "${status}" == "404" ]]; then
+            echo "::notice::Provider ${TF_REGISTRY_NAMESPACE}/${TF_REGISTRY_TYPE} is not registered on registry.terraform.io yet."
+            echo "The GitHub Release was published. Complete the one-time HashiCorp Registry setup in PUBLISHING.md,"
+            echo "then click Resync on the provider settings page (or wait for the GitHub webhook on the next tag)."
+            exit 0
+          fi
+          if [[ "${status}" != "200" ]]; then
+            echo "Unexpected response from ${provider_url}: HTTP ${status}" >&2
+            cat /tmp/tf-provider.json >&2 || true
+            exit 1
+          fi
+
+          echo "Provider is registered. Waiting for version ${version} to appear..."
+          for i in $(seq 1 40); do
+            if curl -fsS "${versions_url}" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          wanted = sys.argv[1]
+          versions = set()
+          for item in data.get('versions', []):
+              if isinstance(item, dict):
+                  versions.add(item.get('version'))
+              else:
+                  versions.add(item)
+          sys.exit(0 if wanted in versions else 1)
+          " "${version}"; then
+              echo "Version ${version} is available on the HashiCorp Terraform Registry."
+              echo "https://registry.terraform.io/providers/${TF_REGISTRY_NAMESPACE}/${TF_REGISTRY_TYPE}/${version}"
+              exit 0
+            fi
+            echo "Attempt ${i}/40: version not visible yet; retrying in 15s..."
+            sleep 15
+          done
+
+          echo "::error::Version ${version} did not appear on the Terraform Registry within 10 minutes."
+          echo "Check GitHub webhook deliveries for https://registry.terraform.io and use Resync on the provider settings page."
+          echo "See PUBLISHING.md for troubleshooting."
+          exit 1

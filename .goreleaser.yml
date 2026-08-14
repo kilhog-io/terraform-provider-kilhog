@@ -1,5 +1,7 @@
 # Visit https://goreleaser.com for documentation on how to customize this
 # behavior.
+# Artifact names and the signed SHA256SUMS file must stay compatible with the
+# HashiCorp Terraform Registry (see PUBLISHING.md).
 version: 2
 before:
   hooks:
