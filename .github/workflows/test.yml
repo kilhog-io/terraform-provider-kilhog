@@ -1,26 +1,36 @@
-# Terraform Provider testing workflow.
+# Terraform Provider Kilhog — CI
 name: Tests
 
-# This GitHub action runs your tests for each pull request and push.
-# Optionally, you can turn it on using a schedule for regular testing.
 on:
   pull_request:
     paths-ignore:
       - 'README.md'
+      - 'CHANGELOG.md'
+      - 'docs/**'
   push:
+    branches:
+      - main
     paths-ignore:
       - 'README.md'
+      - 'CHANGELOG.md'
+      - 'docs/**'
 
-# Testing only needs permissions to read the repository contents.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
+env:
+  KILHOG_BASE_URL: http://127.0.0.1:8080
+  KILHOG_API_KEY: ci-secret
+
 jobs:
-  # Ensure project builds before running testing matrix
   build:
-    name: Build
+    name: Build & Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -34,39 +44,54 @@ jobs:
         with:
           version: latest
 
-  generate:
+  unit:
+    name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
-      # We need the latest version of Terraform for our documentation generation to use
+      - run: go test -v -cover -timeout=120s -parallel=10 ./...
+
+  generate:
+    name: Generate Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_wrapper: false
       - run: make generate
-      - name: git diff
+      - name: Check for uncommitted generated changes
         run: |
           git diff --compact-summary --exit-code || \
-            (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
+            (echo; echo "Unexpected difference after code generation. Run 'make generate' and commit."; exit 1)
 
-  # Run acceptance tests in a matrix with Terraform CLI versions
   test:
     name: 'Acceptance Tests: Terraform ${{ matrix.terraform }}'
-    needs: build
+    needs: [build, unit]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        # Terraform versions
         terraform:
           - '1.13.*'
           - '1.14.*'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kilhog-io/kilhog
+          path: kilhog-api
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
@@ -75,8 +100,35 @@ jobs:
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
-      - run: go mod download
-      - env:
+      - name: Build Kilhog API
+        working-directory: kilhog-api
+        run: make build
+      - name: Start Kilhog API
+        working-directory: kilhog-api
+        run: |
+          KILHOG_DB_DRIVER=sqlite \
+          KILHOG_DB_DSN='file:kilhog-ci.db?_pragma=foreign_keys(ON)' \
+          KILHOG_API_KEY='${{ env.KILHOG_API_KEY }}' \
+          ./bin/kilhog &
+          echo $! > /tmp/kilhog.pid
+      - name: Wait for Kilhog API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf "${KILHOG_BASE_URL}/healthz" >/dev/null; then
+              echo "Kilhog API is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Kilhog API failed to become ready"
+          exit 1
+      - name: Run acceptance tests
+        env:
           TF_ACC: "1"
-        run: go test -v -cover ./internal/provider/
-        timeout-minutes: 10
+        run: go test -v -cover -timeout=15m ./internal/provider/
+      - name: Stop Kilhog API
+        if: always()
+        run: |
+          if [ -f /tmp/kilhog.pid ]; then
+            kill "$(cat /tmp/kilhog.pid)" || true
+          fi

@@ -184,9 +184,9 @@ func (r *SubnetResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	var subnet *kilhogsdk.Subnet
 	if !data.ParentSubnetID.IsNull() && !data.ParentSubnetID.IsUnknown() {
-		parentSubnetID, err := uuid.Parse(data.ParentSubnetID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("Invalid parent subnet ID", err.Error())
+		parentSubnetID, parseErr := uuid.Parse(data.ParentSubnetID.ValueString())
+		if parseErr != nil {
+			resp.Diagnostics.AddError("Invalid parent subnet ID", parseErr.Error())
 			return
 		}
 
