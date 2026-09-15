@@ -1,4 +1,5 @@
-# DO NOT EDIT - This GitHub Workflow is managed by automation
+# Based on the HashiCorp terraform-devex-repos template, with an explicit
+# permissions block added for this repository:
 # https://github.com/hashicorp/terraform-devex-repos
 name: 'Lock Threads'
 
@@ -6,9 +7,17 @@ on:
   schedule:
     - cron: '43 20 * * *'
 
+# The repository default token is read-only, so the lock API calls need an
+# explicit grant.
+permissions:
+  contents: read
+
 jobs:
   lock:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       # NOTE: When TSCCR updates the GitHub action version, update the template workflow file to avoid drift:
       # https://github.com/hashicorp/terraform-devex-repos/blob/main/modules/repo/workflows/lock.tftpl
