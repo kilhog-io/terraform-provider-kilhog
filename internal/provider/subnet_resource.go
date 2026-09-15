@@ -47,7 +47,6 @@ type SubnetResourceModel struct {
 	Prefix         types.Int64  `tfsdk:"prefix"`
 	Address        types.String `tfsdk:"address"`
 	Type           types.String `tfsdk:"type"`
-	Tags           types.List   `tfsdk:"tags"`
 }
 
 func (r *SubnetResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -125,22 +124,6 @@ func (r *SubnetResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					stringOneOf(string(kilhogsdk.AddressTypeIPv4), string(kilhogsdk.AddressTypeIPv6)),
 				},
 			},
-			"tags": schema.ListNestedAttribute{
-				MarkdownDescription: "Key-value metadata tags. Tags cannot be updated after creation.",
-				Optional:            true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"key": schema.StringAttribute{
-							MarkdownDescription: "Tag key.",
-							Required:            true,
-						},
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Tag value.",
-							Required:            true,
-						},
-					},
-				},
-			},
 		},
 	}
 }
@@ -176,11 +159,7 @@ func (r *SubnetResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	input, diags := expandSubnetInput(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	input := expandSubnetInput(data)
 
 	var subnet *kilhogsdk.Subnet
 	if !data.ParentSubnetID.IsNull() && !data.ParentSubnetID.IsUnknown() {
@@ -208,10 +187,7 @@ func (r *SubnetResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(flattenSubnet(ctx, subnet, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	flattenSubnet(subnet, &data)
 
 	tflog.Trace(ctx, "created a subnet", map[string]interface{}{
 		"id": data.ID.ValueString(),
@@ -234,10 +210,7 @@ func (r *SubnetResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	resp.Diagnostics.Append(flattenSubnet(ctx, subnet, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	flattenSubnet(subnet, &data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -273,10 +246,7 @@ func (r *SubnetResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(flattenSubnet(ctx, subnet, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	flattenSubnet(subnet, &data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -345,9 +315,7 @@ func (r *SubnetResource) readSubnet(ctx context.Context, data SubnetResourceMode
 	return subnet, diags
 }
 
-func expandSubnetInput(ctx context.Context, data SubnetResourceModel) (kilhogsdk.CreateSubnetInput, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
+func expandSubnetInput(data SubnetResourceModel) kilhogsdk.CreateSubnetInput {
 	input := kilhogsdk.CreateSubnetInput{
 		Name:   data.Name.ValueString(),
 		Prefix: int(data.Prefix.ValueInt64()),
@@ -363,16 +331,10 @@ func expandSubnetInput(ctx context.Context, data SubnetResourceModel) (kilhogsdk
 		input.Type = kilhogsdk.AddressType(data.Type.ValueString())
 	}
 
-	tags, tagDiags := expandTags(ctx, data.Tags)
-	diags.Append(tagDiags...)
-	input.Tags = tags
-
-	return input, diags
+	return input
 }
 
-func flattenSubnet(ctx context.Context, subnet *kilhogsdk.Subnet, data *SubnetResourceModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func flattenSubnet(subnet *kilhogsdk.Subnet, data *SubnetResourceModel) {
 	data.ID = types.StringValue(subnet.UUID.String())
 	data.ParentKind = types.StringValue(string(subnet.Parent.Kind))
 	data.ParentID = types.StringValue(subnet.Parent.UUID.String())
@@ -393,10 +355,4 @@ func flattenSubnet(ctx context.Context, subnet *kilhogsdk.Subnet, data *SubnetRe
 	data.Prefix = types.Int64Value(int64(subnet.Prefix))
 	data.Address = types.StringValue(subnet.Address)
 	data.Type = types.StringValue(string(subnet.Type))
-
-	tags, tagDiags := flattenTags(ctx, subnet.Tags)
-	diags.Append(tagDiags...)
-	data.Tags = tags
-
-	return diags
 }

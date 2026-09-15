@@ -5,64 +5,58 @@ package provider
 
 import (
 	"context"
+	"sort"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	kilhogsdk "github.com/kilhog-io/kilhog/pkg/kilhog"
 )
 
-type tagModel struct {
-	Key   types.String `tfsdk:"key"`
-	Value types.String `tfsdk:"value"`
-}
-
-func expandTags(ctx context.Context, tags types.List) ([]kilhogsdk.Tag, diag.Diagnostics) {
-	if tags.IsNull() || tags.IsUnknown() {
-		return nil, nil
-	}
-
-	var models []tagModel
+// expandTags converts the Terraform map(string) representation of tags into the
+// list of key/value pairs the Kilhog SDK expects. Keys are sorted so the request
+// payload is deterministic regardless of map iteration order.
+func expandTags(ctx context.Context, tags types.Map) ([]kilhogsdk.Tag, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	diags.Append(tags.ElementsAs(ctx, &models, false)...)
+	if tags.IsNull() || tags.IsUnknown() {
+		return nil, diags
+	}
+
+	elements := make(map[string]string, len(tags.Elements()))
+	diags.Append(tags.ElementsAs(ctx, &elements, false)...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	result := make([]kilhogsdk.Tag, 0, len(models))
-	for _, model := range models {
+	keys := make([]string, 0, len(elements))
+	for key := range elements {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	result := make([]kilhogsdk.Tag, 0, len(elements))
+	for _, key := range keys {
 		result = append(result, kilhogsdk.Tag{
-			Key:   model.Key.ValueString(),
-			Value: model.Value.ValueString(),
+			Key:   key,
+			Value: elements[key],
 		})
 	}
 
 	return result, diags
 }
 
-func flattenTags(ctx context.Context, tags []kilhogsdk.Tag) (types.List, diag.Diagnostics) {
+// flattenTags converts the Kilhog SDK list of tags into a Terraform map(string).
+// Using a map makes the attribute order-insensitive, so the API returning tags
+// in a different order than they were written no longer produces a diff.
+func flattenTags(ctx context.Context, tags []kilhogsdk.Tag) (types.Map, diag.Diagnostics) {
 	if len(tags) == 0 {
-		return types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"key":   types.StringType,
-				"value": types.StringType,
-			},
-		}), nil
+		return types.MapNull(types.StringType), nil
 	}
 
-	models := make([]tagModel, 0, len(tags))
+	elements := make(map[string]string, len(tags))
 	for _, tag := range tags {
-		models = append(models, tagModel{
-			Key:   types.StringValue(tag.Key),
-			Value: types.StringValue(tag.Value),
-		})
+		elements[tag.Key] = tag.Value
 	}
 
-	return types.ListValueFrom(ctx, types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"key":   types.StringType,
-			"value": types.StringType,
-		},
-	}, models)
+	return types.MapValueFrom(ctx, types.StringType, elements)
 }

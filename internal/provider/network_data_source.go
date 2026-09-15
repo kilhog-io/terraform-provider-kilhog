@@ -29,7 +29,7 @@ type NetworkDataSourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
-	Tags        types.List   `tfsdk:"tags"`
+	Tags        types.Map    `tfsdk:"tags"`
 }
 
 func (d *NetworkDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -54,21 +54,10 @@ func (d *NetworkDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				MarkdownDescription: "Network description.",
 				Computed:            true,
 			},
-			"tags": schema.ListNestedAttribute{
+			"tags": schema.MapAttribute{
 				MarkdownDescription: "Key-value metadata tags.",
 				Computed:            true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"key": schema.StringAttribute{
-							MarkdownDescription: "Tag key.",
-							Computed:            true,
-						},
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Tag value.",
-							Computed:            true,
-						},
-					},
-				},
+				ElementType:         types.StringType,
 			},
 		},
 	}

@@ -9,13 +9,6 @@ resource "kilhog_subnet" "dmz" {
   address     = "10.0.0.0"
   prefix      = 24
   type        = "ipv4"
-
-  tags = [
-    {
-      key   = "role"
-      value = "dmz"
-    },
-  ]
 }
 
 resource "kilhog_subnet" "apps" {
