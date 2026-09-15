@@ -1,0 +1,20 @@
+{
+  "name": "terraform-provider-kilhog",
+  "install": "./.cursor/install.sh",
+  "repositoryDependencies": [
+    "github.com/kilhog-io/kilhog"
+  ],
+  "terminals": [
+    {
+      "name": "kilhog-api",
+      "description": "Local Kilhog API (sqlite) used by acceptance tests. Listens on http://127.0.0.1:8080 with API key 'ci-secret'.",
+      "command": "cd \"$HOME/kilhog-api\" && KILHOG_DB_DRIVER=sqlite KILHOG_DB_DSN='file:kilhog-dev.db?_pragma=foreign_keys(ON)' KILHOG_API_KEY=ci-secret ./bin/kilhog"
+    }
+  ],
+  "ports": [
+    {
+      "name": "kilhog-api",
+      "port": 8080
+    }
+  ]
+}
