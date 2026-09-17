@@ -29,12 +29,4 @@ data "kilhog_network" "production" {
 ### Read-Only
 
 - `description` (String) Network description.
-- `tags` (Attributes List) Key-value metadata tags. (see [below for nested schema](#nestedatt--tags))
-
-<a id="nestedatt--tags"></a>
-### Nested Schema for `tags`
-
-Read-Only:
-
-- `key` (String) Tag key.
-- `value` (String) Tag value.
+- `tags` (Map of String) Key-value metadata tags.

@@ -17,12 +17,9 @@ resource "kilhog_network" "production" {
   name        = "production"
   description = "Production network"
 
-  tags = [
-    {
-      key   = "environment"
-      value = "production"
-    },
-  ]
+  tags = {
+    environment = "production"
+  }
 }
 ```
 
@@ -36,19 +33,11 @@ resource "kilhog_network" "production" {
 ### Optional
 
 - `description` (String) Network description.
-- `tags` (Attributes List) Key-value metadata tags. (see [below for nested schema](#nestedatt--tags))
+- `tags` (Map of String) Key-value metadata tags.
 
 ### Read-Only
 
 - `id` (String) Network UUID.
-
-<a id="nestedatt--tags"></a>
-### Nested Schema for `tags`
-
-Required:
-
-- `key` (String) Tag key.
-- `value` (String) Tag value.
 
 ## Import
 

@@ -36,7 +36,6 @@ type SubnetDataSourceModel struct {
 	Prefix         types.Int64  `tfsdk:"prefix"`
 	Address        types.String `tfsdk:"address"`
 	Type           types.String `tfsdk:"type"`
-	Tags           types.List   `tfsdk:"tags"`
 }
 
 func (d *SubnetDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -89,22 +88,6 @@ func (d *SubnetDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				MarkdownDescription: "Address family.",
 				Computed:            true,
 			},
-			"tags": schema.ListNestedAttribute{
-				MarkdownDescription: "Key-value metadata tags.",
-				Computed:            true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"key": schema.StringAttribute{
-							MarkdownDescription: "Tag key.",
-							Computed:            true,
-						},
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Tag value.",
-							Computed:            true,
-						},
-					},
-				},
-			},
 		},
 	}
 }
@@ -143,10 +126,7 @@ func (d *SubnetDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	resourceModel := SubnetResourceModel{
 		NetworkID: data.NetworkID,
 	}
-	resp.Diagnostics.Append(flattenSubnet(ctx, subnet, &resourceModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	flattenSubnet(subnet, &resourceModel)
 
 	data.ID = resourceModel.ID
 	data.Name = resourceModel.Name
@@ -157,7 +137,6 @@ func (d *SubnetDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	data.Prefix = resourceModel.Prefix
 	data.Address = resourceModel.Address
 	data.Type = resourceModel.Type
-	data.Tags = resourceModel.Tags
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

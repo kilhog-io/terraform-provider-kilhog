@@ -24,13 +24,6 @@ resource "kilhog_subnet" "dmz" {
   address     = "10.0.0.0"
   prefix      = 24
   type        = "ipv4"
-
-  tags = [
-    {
-      key   = "role"
-      value = "dmz"
-    },
-  ]
 }
 
 resource "kilhog_subnet" "apps" {
@@ -56,7 +49,6 @@ resource "kilhog_subnet" "apps" {
 - `address` (String) Network address for the subnet. Required when the subnet is created directly under a network. Optional when created under a parent subnet; the API allocates an address when omitted.
 - `description` (String) Subnet description.
 - `parent_subnet_id` (String) UUID of the parent subnet. When set, the subnet is created as a child of that subnet instead of directly under the network.
-- `tags` (Attributes List) Key-value metadata tags. Tags cannot be updated after creation. (see [below for nested schema](#nestedatt--tags))
 - `type` (String) Address family. Only `ipv4` is supported by the API today.
 
 ### Read-Only
@@ -64,14 +56,6 @@ resource "kilhog_subnet" "apps" {
 - `id` (String) Subnet UUID.
 - `parent_id` (String) UUID of the parent resource reported by the API.
 - `parent_kind` (String) Parent kind reported by the API (`network` or `subnet`).
-
-<a id="nestedatt--tags"></a>
-### Nested Schema for `tags`
-
-Required:
-
-- `key` (String) Tag key.
-- `value` (String) Tag value.
 
 ## Import
 
