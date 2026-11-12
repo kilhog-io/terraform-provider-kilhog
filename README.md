@@ -87,7 +87,10 @@ GitHub Actions workflows live under `.github/workflows/`:
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `Tests` | push/PR to `main` | Build, lint, unit tests, docs generation check, acceptance tests (Terraform 1.13.* / 1.14.*) against a local Kilhog API |
+| `Dependency Updates` | daily at 06:17 UTC, or manual | Upgrade Go modules in the root module and `tools/`, then `make build` and `make test`. Opens or updates pull request `chore/go-dependency-updates` only when both succeed |
 | `Release` | tag `vMAJOR.MINOR.PATCH` | Signed GitHub Release via GoReleaser (`GPG_PRIVATE_KEY`, `PASSPHRASE`), then HashiCorp Registry ingest via the GitHub webhook |
+
+`Dependency Updates` pushes with the workflow `GITHUB_TOKEN`. Repository setting **Allow GitHub Actions to create and approve pull requests** must be enabled, otherwise the build can pass and the pull request step still fails. GitHub Actions version updates stay on Dependabot.
 
 Publishing a new version is `git tag vX.Y.Z && git push origin vX.Y.Z`. One-time GPG key, GitHub secrets, and registry declaration steps are in [PUBLISHING.md](PUBLISHING.md).
 

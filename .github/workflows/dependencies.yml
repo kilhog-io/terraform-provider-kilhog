@@ -1,0 +1,164 @@
+# Update Go modules every day, then compile the provider and run unit tests.
+# A pull request is opened only after both checks succeed, so a broken
+# upgrade stays off the branch.
+name: Dependency Updates
+
+on:
+  schedule:
+    # 06:17 UTC every day (07:17 Europe/Paris in winter, 08:17 in summer).
+    # GitHub may delay scheduled runs when Actions is busy.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+# Scheduled workflows use the default token, which is read-only unless a
+# job grants the permissions it needs.
+permissions:
+  contents: read
+
+concurrency:
+  group: go-dependency-updates
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update, build, and unit test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the daily branch can be fetched and replaced.
+          fetch-depth: 0
+
+      - name: Resolve Go minor version
+        id: go-minor
+        run: |
+          set -euo pipefail
+          version="$(awk '/^go [0-9]/{print $2; exit}' go.mod)"
+          minor="${version%.*}"
+          if [[ -z "${minor}" || "${minor}" == "${version}" ]]; then
+            echo "Could not read a major.minor Go version from go.mod (got '${version}')." >&2
+            exit 1
+          fi
+          echo "go.mod declares go ${version}; installing the latest ${minor} patch so module upgrades can move within this minor release."
+          echo "minor=${minor}" >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go-minor.outputs.minor }}
+          check-latest: true
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+
+      - name: Update root module
+        env:
+          # Stay on the toolchain setup-go just installed. Do not jump to
+          # the next Go minor while resolving modules.
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          go version
+          go get -t -u ./...
+          go mod tidy
+
+      - name: Update tools module
+        env:
+          GOTOOLCHAIN: local
+        working-directory: tools
+        run: |
+          set -euo pipefail
+          # tools/tools.go is behind //go:build generate, so ./... is empty
+          # unless that tag is set.
+          go get -tags=generate -u ./...
+          go mod tidy
+
+      - name: Build and unit test
+        run: |
+          set -euo pipefail
+          declared="$(awk '/^go [0-9]/{print $2; exit}' go.mod)"
+          echo "Verifying with the Go version committed in go.mod: ${declared}"
+          export GOTOOLCHAIN="go${declared}"
+          go version
+          make build
+          make test
+
+      - name: Open pull request
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          module_files=(go.mod go.sum tools/go.mod tools/go.sum)
+          mapfile -t unexpected < <(git status --porcelain --untracked-files=all -- . ':!go.mod' ':!go.sum' ':!tools/go.mod' ':!tools/go.sum')
+          if ((${#unexpected[@]})); then
+            echo "Dependency update changed files outside go.mod and go.sum:" >&2
+            printf '%s\n' "${unexpected[@]}" >&2
+            exit 1
+          fi
+
+          if git diff --quiet -- "${module_files[@]}"; then
+            echo "Go modules are already up to date."
+            exit 0
+          fi
+
+          branch="chore/go-dependency-updates"
+          today="$(TZ=Europe/Paris date +%F)"
+          title="chore: update Go module dependencies (${today})"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "${branch}"
+          git add -- "${module_files[@]}"
+          git commit -m "chore: update Go module dependencies"
+
+          if git ls-remote --exit-code --heads origin "${branch}" >/dev/null; then
+            git fetch origin "${branch}"
+            git push --force-with-lease="refs/heads/${branch}:refs/remotes/origin/${branch}" origin "HEAD:refs/heads/${branch}"
+          else
+            git push origin "HEAD:refs/heads/${branch}"
+          fi
+
+          body_file="$(mktemp)"
+          cat > "${body_file}" <<EOF
+          ## Related Issue
+
+          Automated daily dependency update. No linked issue.
+
+          ## Description
+
+          Go modules in the root module and \`tools/\` were upgraded with \`go get -u\` and \`go mod tidy\`.
+
+          Before this pull request was opened, the workflow ran \`make build\` and \`make test\` with the Go version declared in \`go.mod\`. The job does not update this branch when the build or the unit tests fail.
+
+          Acceptance tests are unchanged here. They run on the \`Tests\` workflow, which needs a Kilhog API.
+
+          ## Rollback Plan
+
+          - [x] If a change needs to be reverted, we will roll out an update to the code within 7 days.
+
+          Close this pull request without merging. The next successful daily run replaces the branch.
+
+          ## Changes to Security Controls
+
+          No changes to security controls. This pull request only bumps Go module versions.
+          EOF
+          {
+            echo
+            echo "### go.mod"
+            echo
+            echo '```diff'
+            git diff HEAD~1 -- go.mod tools/go.mod
+            echo '```'
+          } >> "${body_file}"
+
+          if gh pr view "${branch}" --json number --jq .number >/dev/null 2>&1; then
+            gh pr edit "${branch}" --title "${title}" --body-file "${body_file}"
+          else
+            gh pr create --base main --head "${branch}" --title "${title}" --body-file "${body_file}"
+          fi
